@@ -13,6 +13,7 @@ type patrollingMAP struct {
 	obsticals              []xAndYLocation
 	guard                  xAndYLocation
 	positionsMoved         []xAndYLocation
+	potentialLoop          []xAndYLocation
 	guardMovementDirection int
 	hasExited              bool
 	hasLooped              bool
@@ -24,7 +25,7 @@ type xAndYLocation struct {
 
 func main() {
 	fileDate, _ := os.ReadFile("./input/sample.txt")
-	rows := strings.Split(string(fileDate), "\r\n")
+	rows := strings.Split(string(fileDate), "\n")
 	//Create an index of object + start position + max x and y axisis of the map
 	var Positions patrollingMAP
 	Positions.maxY = len(rows[0])
@@ -68,17 +69,39 @@ func main() {
 			continue
 		}
 	}
-	fmt.Println("Len:", len(Positions.positionsMoved), "\n", Positions.positionsMoved)
+	//fmt.Println("Len:", len(Positions.positionsMoved), "\n", Positions.positionsMoved)
+	var counterOfObs int
+	//Loop Through Positions that the guard has been and then update the same to have obsticals
+	for i := 0; i < len(Positions.positionsMoved); i++ {
+		fmt.Println("itteration ", i, "out of ", len(Positions.positionsMoved))
+		if i == 0 {
+			continue
+		}
+		var tempPositions patrollingMAP
+		tempPositions.maxX = Positions.maxX
+		tempPositions.maxY = Positions.maxY
+		tempPositions.obsticals = append(Positions.obsticals, Positions.positionsMoved[i])
+		tempPositions.guard = Positions.positionsMoved[0]
+		tempPositions.positionsMoved = append(tempPositions.positionsMoved, Positions.positionsMoved[0])
+		tempPositions.guardMovementDirection = 1
+		tempPositions.hasLooped = false
+		tempPositions.hasExited = false
+		tempPositions = AddingObjectLoopCreated(tempPositions)
+		if tempPositions.hasLooped == true {
+			counterOfObs++
+		}
+	}
+	fmt.Println(counterOfObs)
 }
 
-func AddingObjectLoopCreated(Positions patrollingMAP) bool {
+func AddingObjectLoopCreated(Positions patrollingMAP) patrollingMAP {
 	whileLoop := 2
 	for whileLoop <= 2 {
 		if Positions.hasExited {
-			return false
+			return Positions
 		}
 		if Positions.hasLooped {
-			return true
+			return Positions
 		}
 		switch Positions.guardMovementDirection {
 		case 1:
@@ -95,7 +118,7 @@ func AddingObjectLoopCreated(Positions patrollingMAP) bool {
 			continue
 		}
 	}
-	return false
+	return Positions
 }
 
 func MoveGuard(Positions patrollingMAP, direction int) patrollingMAP {
@@ -149,21 +172,45 @@ func newPositionCompare(Positions patrollingMAP, newPosition xAndYLocation) patr
 	}
 	if !slices.Contains(Positions.positionsMoved, newPosition) {
 		Positions.positionsMoved = append(Positions.positionsMoved, newPosition)
+		Positions.potentialLoop = nil
 	} else {
 		//Check to see if Looped
-		var listCheck []xAndYLocation
-		for i, _ := range Positions.positionsMoved {
-			if newPosition == Positions.positionsMoved[i] {
-				listCheck = append(listCheck, Positions.positionsMoved[i:]...)
-				listCheck = append(listCheck, newPosition)
+		Positions.potentialLoop = append(Positions.potentialLoop, newPosition)
+		//fmt.Println("Org Moved locations:", Positions.positionsMoved, "\n Potential Loop:", Positions.potentialLoop)
+		//fmt.Println("Path Taken:", Positions.positionsMoved, "\nPotential Loop:", Positions.potentialLoop)
+		if len(Positions.potentialLoop) > 1 {
+			for z, _ := range Positions.positionsMoved {
+				if len(Positions.potentialLoop) == 0 {
+					break
+				}
+				if Positions.positionsMoved[z] == Positions.potentialLoop[0] {
+					for q, _ := range Positions.potentialLoop {
+						//fmt.Println(len(Positions.potentialLoop))
+						if len(Positions.potentialLoop) <= 0 {
+							break
+						}
+						if z+q > len(Positions.positionsMoved)-1 {
+							break
+						}
+						if Positions.potentialLoop[q] != Positions.positionsMoved[z+q] {
+							Positions.potentialLoop = nil
+							break
+						} else {
+							if len(Positions.potentialLoop)+z >= len(Positions.positionsMoved) {
+								break
+							}
+							fmt.Println(q, Positions.potentialLoop)
+							if Positions.potentialLoop[0] == Positions.positionsMoved[z] && Positions.positionsMoved[z] == Positions.potentialLoop[len(Positions.potentialLoop)-1] {
+								fmt.Println(Positions.positionsMoved)
+								Positions.hasLooped = true
+								break
+							}
+						}
+					}
+				}
 			}
 		}
-		for i := range len(listCheck) / 2 {
-			fmt.Println("Check", listCheck)
-			if listCheck[:len(listCheck)/2][i] == listCheck[len(listCheck)/2:][i] {
-				fmt.Println(listCheck[:len(listCheck)/2][i], listCheck[len(listCheck)/2:][i])
-			}
-		}
+
 	}
 	Positions.guard = newPosition
 	return Positions
