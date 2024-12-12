@@ -24,7 +24,7 @@ type xAndYLocation struct {
 }
 
 func main() {
-	fileDate, _ := os.ReadFile("./input/sample.txt")
+	fileDate, _ := os.ReadFile("./input/input.txt")
 	rows := strings.Split(string(fileDate), "\n")
 	//Create an index of object + start position + max x and y axisis of the map
 	var Positions patrollingMAP
@@ -186,6 +186,10 @@ func newPositionCompare(Positions patrollingMAP, newPosition xAndYLocation) patr
 				if Positions.positionsMoved[z] == Positions.potentialLoop[0] {
 					for q, _ := range Positions.potentialLoop {
 						//fmt.Println(len(Positions.potentialLoop))
+						if len(Positions.potentialLoop) > 10000 {
+							Positions.hasLooped = true
+							break
+						}
 						if len(Positions.potentialLoop) <= 0 {
 							break
 						}
@@ -193,13 +197,11 @@ func newPositionCompare(Positions patrollingMAP, newPosition xAndYLocation) patr
 							break
 						}
 						if Positions.potentialLoop[q] != Positions.positionsMoved[z+q] {
-							Positions.potentialLoop = nil
 							break
 						} else {
 							if len(Positions.potentialLoop)+z >= len(Positions.positionsMoved) {
 								break
 							}
-							fmt.Println(q, Positions.potentialLoop)
 							if Positions.potentialLoop[0] == Positions.positionsMoved[z] && Positions.positionsMoved[z] == Positions.potentialLoop[len(Positions.potentialLoop)-1] {
 								fmt.Println(Positions.positionsMoved)
 								Positions.hasLooped = true
